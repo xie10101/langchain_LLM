@@ -1,7 +1,7 @@
 // 输出解析器 
 import { ChatMoonshot } from "@langchain/community/chat_models/moonshot";
 import { ChatPromptTemplate  } from "@langchain/core/prompts";
-import  { StringOutputParser,CommaSeparatedListOutputParser,StructuredOutputParser }  from "@langchain/core/output_parsers";
+import { StringOutputParser,CommaSeparatedListOutputParser,StructuredOutputParser }  from "@langchain/core/output_parsers";
 import { z } from "zod";
 
 import dotenv from "dotenv"; 
