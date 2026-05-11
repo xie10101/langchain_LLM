@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "Bash(node -e \"try{console.log\\(require.resolve\\('@langchain/community/tools/tavily_search'\\)\\)}catch\\(e\\){console.log\\('NOT FOUND'\\)}\")"
+    ]
+  }
+}

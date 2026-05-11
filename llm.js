@@ -1,4 +1,4 @@
-import { ChatMoonshot } from "@langchain/community/chat_models/moonshot";
+import { ChatZhipuAI} from "@langchain/community/chat_models/zhipuai";
 import dotenv from "dotenv"; 
 dotenv.config();
 dotenv.config({ path: ".env.local" });
@@ -8,9 +8,9 @@ dotenv.config({ path: ".env.local" });
 agent是c端的，使用时客户可以动态填充其中的密匙 
  */
 
-const model = new ChatMoonshot({
-  apiKey: process.env.MOONSHOT_API_KEY, 
-  model: "moonshot-v1-8k", 
+const model = new ChatZhipuAI({
+  apiKey: process.env.ZHIPU_API_KEY, 
+  model: "GLM-4.7-Flash", 
   temperature: 0.7,
   streaming: true,
   maxTokens: 1024,
@@ -26,8 +26,8 @@ async function run() {
 // 3. 执行
 // run();
 
-// 批处理  batch  //仅是并发多个请求 
-
+//批处理  batch 
+//仅是并发多个请求 
 async function runBatch() { 
     const responses = await model.batch([
      "hellow",
@@ -38,7 +38,7 @@ async function runBatch() {
 }
 
 
-// 流式传入/输出 ？？ 
+// 流式传入/输出 
 async function runStream() { 
   const stream = await model.stream("hello?"); 
   for await (const chunk of stream) 
@@ -46,7 +46,15 @@ async function runStream() {
      const content = chunk.content || "";
      process.stdout.write(content); // 不会换行！非换行打印 -实际stream是一系列对象 
   }
+  // console.log(stream)
 }
+
+/**
+ *  未出现实际效果的原因 ：
+ *   Moonshot 模型的流式输出可能不是逐字符返回，
+ *   而是按句子或段落返回较大的 chunks
+ * 
+ */
 
 runStream()
 async function runStreamLog() { 

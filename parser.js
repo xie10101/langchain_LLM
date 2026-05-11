@@ -61,11 +61,10 @@ const chain3 = ChatPromptTemplate.fromMessages([
 // list 解析器 针对的只是使用string解析后的字符串数据 
 
 return   await chain3.invoke({ phrase: "开心" });
-
-  //  callListOutputParser(parser,parser2).then(( result)=> console.log(result))
   //   CommaSeparatedListOutputParser 只能解析纯字符串，不能解析 AIMessage 对象！
 }
 
+// callListOutputParser(parser,parser2).then(( result)=> console.log(result))
 
   // Template 结合 parser2 是标准格式  - 此种使用不合理 
 async  function callStructuredParserT( parser) { 
@@ -78,6 +77,7 @@ const chain5 = ChatPromptTemplate.fromTemplate(`
 return   await chain5.invoke({ format_instructions: parser3.getFormatInstructions(),sentence: "小明13岁了" });
 }
 
+// callStructuredParserT(parser3).then(( result)=> console.log(result))
 async  function callStructuredParser(parser,formatInstructions) { 
      
 const chain4 = ChatPromptTemplate.fromMessages([
@@ -91,7 +91,7 @@ const chain4 = ChatPromptTemplate.fromMessages([
 return   await chain4.invoke({ sentence: "小明13岁了",formatInstructions:formatInstructions });
 }
 
-
+  // callStructuredParser(parser,parser3.getFormatInstructions()).then(( result)=> console.log(result))
 
 async function extractInfo(parser) {
   const prompt = ChatPromptTemplate.fromMessages([
@@ -110,6 +110,7 @@ async function extractInfo(parser) {
 extractInfo(parser4).then((result)=> console.log(result))
 
 
+// 视频举例 --  zod 配合 对象结构解析器
 // async function callZodStructuredParser() {
 //   const prompt = ChatPromptTemplate.fromTemplate(
 //     "Extract information from the following phrase.\n{format_instructions}\n{phrase}"
