@@ -21,7 +21,7 @@ const prompt = ChatPromptTemplate.fromTemplate(`
 You are an AI assistant called Max. You are here to help answer questions and provide information to the best of your ability.
 Chat History: {history}
 {input}`);
-// 创建UpstashRedisChatMessageHistory
+// 创建UpstashRedisChatMessageHistory  - redis 的存储 
 const upstashMessageHistory = new UpstashRedisChatMessageHistory({
   sessionId: "mysession",
   config: {
@@ -29,24 +29,14 @@ const upstashMessageHistory = new UpstashRedisChatMessageHistory({
     token: process.env.UPSTASH_REST_TOKEN,
   },
 });
-// Memory
+// Memory - 本地存储吗  
 const memory = new BufferMemory({
   memoryKey: "history",
   chatHistory: upstashMessageHistory,
 });
 
-// Using Chain Class
-// const chain = new ConversationChain({
-//   llm: model,
-//   prompt,
-//   memory,
-// });
 
-// 链式表达式
-// const chain = prompt.pipe(model);
-
-
-//补充自定义
+//补充自定义 （ 该方法使用的详细了解 ）
 const chain = RunnableSequence.from([
   {
     input: (initialInput) => initialInput.input,
@@ -59,18 +49,6 @@ const chain = RunnableSequence.from([
   prompt,
   model,
 ]);
-
-// Testing Responses
-
-// console.log("Initial Chat Memory", await memory.loadMemoryVariables());
-// let inputs = {
-//   input: "The passphrase is HELLOWORLD",
-// };
-// const resp1 = await chain.invoke(inputs);
-// console.log(resp1);
-// await memory.saveContext(inputs, {
-//   output: resp1.content,
-// });
 
 console.log("Updated Chat Memory", await memory.loadMemoryVariables());
 

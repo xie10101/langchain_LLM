@@ -1,4 +1,4 @@
-import { ChatMoonshot } from "@langchain/community/chat_models/moonshot";
+import { ChatOpenAI } from "@langchain/openai";
 import { ChatPromptTemplate } from "@langchain/core/prompts";
 import { AgentExecutor,createOpenAIFunctionsAgent} from "@langchain/classic/agents";
 import { MessagesPlaceholder } from "@langchain/core/prompts";
@@ -13,18 +13,27 @@ import { createRetrieverTool } from "@langchain/classic/tools/retriever";
 import { AIMessage,HumanMessage } from "@langchain/core/messages";
 import dotenv from "dotenv"; 
 import { createInterface } from "readline";
+import { createReactAgent } from "@langchain/classic/agents";
 
 dotenv.config();
 dotenv.config({ path: ".env.local" });
 
 
-const model = new ChatMoonshot({
-  apiKey: process.env.MOONSHOT_API_KEY, 
-  model: "moonshot-v1-8k", 
-  temperature: 0.7,
-  streaming: false,
-  maxTokens: 1024,
-  verbose: true,
+// const model = new ChatMoonshot({
+//   apiKey: process.env.MOONSHOT_API_KEY, 
+//   model: "moonshot-v1-8k", 
+//   temperature: 0.7,
+//   streaming: false,
+//   maxTokens: 1024,
+//   verbose: true,
+// });
+const model = new ChatOpenAI({
+  model: "gpt-5.1",
+  apiKey: process.env.JIEKOU_API_KEY, // 通常是中转站平台的 key
+  configuration: {
+    baseURL: "https://api.highwayapi.ai/openai", // 关键：替换成中转地址
+  },
+  // streamUsage: false,
 });
 
 // 提示词部分 
@@ -87,15 +96,16 @@ const tools = [searchTool,retrieverTool]
 //openai函数代理  —— 多模型兼容 
 const agent = await createOpenAIFunctionsAgent({
   llm: model,
-  prompt,
+  prompt, 
   tools: tools,
 });
 
-// 触发 agent 执行 
+// 触发 agent 执行
 const agentExecutor = new AgentExecutor({
   agent,
   tools,
-  verbose:false
+  verbose: true,                        // 开启详细日志，看到 agent 内部推理过程
+  returnIntermediateSteps: true,        // 返回工具调用的中间步骤，暴露工具输出
 });
 
 const chat_history =[]
@@ -123,7 +133,18 @@ const askQuestion =()=>{
       chat_history
     });
 
-    console.log("Agent",response.output) // 
+    // 打印工具调用的中间步骤（排查工具是否被调用、返回了什么）
+    if (response.intermediateSteps?.length > 0) {
+      console.log("\n=== 工具调用详情 ===");
+      response.intermediateSteps.forEach((step, i) => {
+        console.log(`[工具 ${i + 1}] ${step.action.tool}`);
+        console.log(`  输入: ${step.action.toolInput.query ?? JSON.stringify(step.action.toolInput)}`);
+        console.log(`  输出: ${JSON.stringify(step.observation).slice(0, 500)}`);
+      });
+      console.log("===================\n");
+    }
+
+    console.log("Agent:", response.output);
     // 补充历史  
     chat_history.push(new HumanMessage(input));
     chat_history.push(new AIMessage(response.output));
