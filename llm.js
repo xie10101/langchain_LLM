@@ -24,7 +24,7 @@ async function run() {
   console.log(response.content); //  回复内容 
 }
 // 3. 执行
-// run();
+run();
 
 //批处理  batch 
 //仅是并发多个请求 
@@ -56,7 +56,7 @@ async function runStream() {
  * 
  */
 
-runStream()
+// runStream()
 async function runStreamLog() { 
   const stream = await model.streamLog("创作一首有关春天的诗歌 ?"); 
   console.log(stream)

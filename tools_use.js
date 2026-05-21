@@ -17,19 +17,17 @@ import { createInterface } from "readline";
 dotenv.config();
 dotenv.config({ path: ".env.local" });
 
-import dns from 'dns';
-dns.setDefaultResultOrder('ipv4first');
+
 const model = new ChatMoonshot({
   apiKey: process.env.MOONSHOT_API_KEY, 
   model: "moonshot-v1-8k", 
   temperature: 0.7,
-  streaming: true,
+  streaming: false,
   maxTokens: 1024,
-  // verbose: true,
+  verbose: true,
 });
 
 // 提示词部分 
-
 const prompt = ChatPromptTemplate.fromMessages([
   [
     "system",
@@ -39,6 +37,8 @@ const prompt = ChatPromptTemplate.fromMessages([
   ["human", "{input}"],
   new MessagesPlaceholder("agent_scratchpad")
 ]);
+//  占位符的使用 -包括invoke参数输入和 agent工具调用历史记录自动补充 
+
 
 //  Tavily Search 工具 - 联网搜搜 
 const searchTool = new TavilySearch({
@@ -51,14 +51,17 @@ const searchTool = new TavilySearch({
 const loader = new CheerioWebBaseLoader(
   "https://js.langchain.com/docs/expression_language/"
 );
-const docs = await loader.load();
+const docs = await loader.load(); // 转为文档对象 
 
+//  文档数据切分 
 const splitter = new RecursiveCharacterTextSplitter({
   chunkSize: 200,
   chunkOverlap: 20,
 });
+// 切分后的文档对象 
 const splitDocs = await splitter.splitDocuments(docs);
 
+// 创建向量存储实例（数据转为向量）
 const embeddings = new OpenAIEmbeddings({
   apiKey: process.env.SILICONFLOW_API_KEY, 
   configuration: {
@@ -66,20 +69,22 @@ const embeddings = new OpenAIEmbeddings({
   },
   model: "Qwen/Qwen3-Embedding-0.6B",
 });
+// 将切分后的文档对象转为向量存储对象  -- 本地存储 
 const vectorStore = await MemoryVectorStore.fromDocuments(splitDocs, embeddings);
+
+// 检索器
 const retriever = vectorStore.asRetriever({ k: 2 });
 
+// 创建检索工具实例 
 const retrieverTool = createRetrieverTool(retriever, {
   name: "lcel_search",
   description: "Use this tool for LangChain Expression Language (LCEL)",
 });
 
-// 工具部分 ：
+// 工具 ：
 const tools = [searchTool,retrieverTool]
-//retrieverTool
 
-
-//openai函数代理 ？ 
+//openai函数代理  —— 多模型兼容 
 const agent = await createOpenAIFunctionsAgent({
   llm: model,
   prompt,
@@ -106,8 +111,7 @@ const rl =createInterface(
 const askQuestion =()=>{
   rl.question("User:",async (input)=>{
     //Call Agent 
-
-//  对输入exit 退出 
+   //  对输入exit 退出 
     if(input.toLowerCase()==="exit")
       {
         rl.close()
@@ -119,7 +123,7 @@ const askQuestion =()=>{
       chat_history
     });
 
-    console.log("Agent",response.output)
+    console.log("Agent",response.output) // 
     // 补充历史  
     chat_history.push(new HumanMessage(input));
     chat_history.push(new AIMessage(response.output));
@@ -155,8 +159,7 @@ askQuestion()
  *   --- 天气搜索 
  * 
  * 2. 上期检索器作为工具 
- * 
- * 
+ *
  * // 升级为机器人 -从终端获取输入信息 
  * // 动态 input 
  * // npm install readline 
@@ -182,3 +185,12 @@ askQuestion()
      *   2. https://api.jiekou.ai/openai baseURl
      *   sk_Iy-vtTtA2ojNbpCZQLmtzIU8JyKOTKpWpzzVz7h-Ysk
      */
+
+// 简单实现多轮对话 + 单轮历史记录 （网络搜索未体现）
+
+// 主要的知识点  ：  
+// langchain中agent 概念 
+// tools  
+// agentExecutor
+// 
+// readine 使用
