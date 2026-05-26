@@ -1,86 +1,111 @@
-import { ChatPromptTemplate } from "@langchain/core/prompts";
-// ✅ 新版（2025 年最新）
-import { BufferMemory } from "@langchain/community/stores/memory";
-import { UpstashRedisChatMessageHistory } from "@langchain/community/stores/message/upstash_redis";
-import dotenv from "dotenv"; 
+import { ChatPromptTemplate, MessagesPlaceholder } from "@langchain/core/prompts";
+import dotenv from "dotenv";
+import { RunnableWithMessageHistory } from "@langchain/core/runnables";
+import { ChatOpenAI } from "@langchain/openai";
+import { BaseListChatMessageHistory } from "@langchain/core/chat_history";
+import { mapStoredMessagesToChatMessages } from "@langchain/core/messages";
+import { UpstashRedisStore } from "@langchain/community/storage/upstash_redis";
+import { Redis } from "@upstash/redis";
+
 dotenv.config();
 dotenv.config({ path: ".env.local" });
 
-// llm 设置 
 const model = new ChatOpenAI({
   model: "gpt-5.1",
-  apiKey: process.env.JIEKOU_API_KEY, // 通常是中转站平台的 key
+  apiKey: process.env.JIEKOU_API_KEY,
   configuration: {
-    baseURL: "https://api.highwayapi.ai/openai", // 关键：替换成中转地址
+    baseURL: "https://api.highwayapi.ai/openai",
   },
-  // streamUsage: false,
 });
 
+const prompt = ChatPromptTemplate.fromMessages([
+  ["system", "You are an AI assistant called Max."],
+  new MessagesPlaceholder("history"),
+  ["human", "{input}"],
+]);
 
-//提示词设置 
-const prompt = ChatPromptTemplate.fromTemplate(`
-    You are an AI assistant called Max.
-{input}
-    `)
+const chain = prompt.pipe(model);
 
-    //
-const  chain = prompt.pipe(model);
+// ============================================================
+// UpstashRedisStore 手动封装 → BaseListChatMessageHistory
+// ============================================================
 
-// 获取 响应 
-//LCEL 
+class UpstashStoreChatMessageHistory extends BaseListChatMessageHistory {
+  constructor({ sessionId, store }) {
+    super();
+    this._sessionId = sessionId;
+    this._store = store;
+    this._key = `chat:${sessionId}`;
+  }
 
-let inputs1 = {
-  input: "the passphrase  is  6582352 ?",
-};
+  async getMessages() {
+    // mget 接受 string[]，返回 Uint8Array[]
+    const [raw] = await this._store.mget([this._key]);
+    if (!raw || raw.length === 0) return [];
 
-//大模型执行为异步行为 
-const resp1 = await chain.invoke(inputs1);
-console.log(resp1);
+    // 解码二进制 → JSON → 还原为消息对象
+    const stored = JSON.parse(new TextDecoder().decode(raw));
+    return mapStoredMessagesToChatMessages(stored);
+  }
 
-//  扩展缓存内容 - 并将数据保存至数据库中 
-const memory = new BufferMemory({
-// 创建内存键：·
-memoryKey: "history",
-     
- }
+  async addMessage(message) {
+    const messages = await this.getMessages();
+    messages.push(message);
+    await this._save(messages);
+  }
+
+  async addMessages(messages) {
+    const existing = await this.getMessages();
+    await this._save([...existing, ...messages]);
+  }
+
+  async clear() {
+    await this._store.mdelete([this._key]);
+  }
+
+  async _save(messages) {
+    // msg.toDict() → StoredMessage 格式（LangChain 标准序列化）
+    const stored = messages.map((m) => m.toDict());
+    // 编码为 Uint8Array（UpstashRedisStore 要求）
+    const encoded = new TextEncoder().encode(JSON.stringify(stored));
+    // mset 接受 [key, Uint8Array][]
+    await this._store.mset([[this._key, encoded]]);
+  }
+}
+
+// ============================================================
+// 初始化
+// ============================================================
+
+const redisClient = new Redis({
+  url: process.env.UPSTASH_REDIS_REST_URL,
+  token: process.env.UPSTASH_REDIS_REST_TOKEN,
+});
+
+const store = new UpstashRedisStore({ client: redisClient });
+
+const getMessageHistory = async (sessionId) =>
+  new UpstashStoreChatMessageHistory({ sessionId, store });
+
+const chainWithHistory = new RunnableWithMessageHistory({
+  runnable: chain,
+  getMessageHistory,
+  inputMessagesKey: "input",
+  historyMessagesKey: "history",
+});
+
+// ============================================================
+// 测试
+// ============================================================
+
+const resp1 = await chainWithHistory.invoke(
+  { input: "密码是 6582352" },
+  { configurable: { sessionId: "chat1" } }
 );
+console.log("resp1:", resp1.content);
 
-let inputs2 = {
-  input: "What is the passphrase?",
-};
-
-//大模型执行为异步行为 
-const resp2 = await chain.invoke(inputs2);
-console.log(resp2);
-// 查看内存内容 
-console.log("Updated Chat Memory", await memory.loadMemoryVariables());
-
-/**
- * //BufferMemory = LangChain 里最简单、最常用的「聊天记忆管理器」
-    把多轮对话历史存起来
-    自动拼进提示词给模型看
-    让 AI 记住 “刚才聊了什么”     - 代替之前的history 数组 
- */
-
-//1.内存对象没有管道方法 ：
-// 传统方法 ：使用 ConversationChain 
-// const chainWithMemory = new ConversationChain({
-
-
-// LCEL 使用 
-
-
-
-// 将短期记忆存储至 redis服务器- upstash 提供
-const upstashChatHistory =  new UpstashRedisChatMessageHistory(
-    {
-        sessionId:"chat1 "
-    }
-)
-
-
-
-chain.addMemory(memory);
-
-
-// 接入 uppatch-redis 服务： 
+const resp2 = await chainWithHistory.invoke(
+  { input: "密码是多少？" },
+  { configurable: { sessionId: "chat1" } }
+);
+console.log("resp2:", resp2.content);

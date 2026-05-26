@@ -136,11 +136,11 @@ const askQuestion =()=>{
     // 打印工具调用的中间步骤（排查工具是否被调用、返回了什么）
     if (response.intermediateSteps?.length > 0) {
       console.log("\n=== 工具调用详情 ===");
-      response.intermediateSteps.forEach((step, i) => {
-        console.log(`[工具 ${i + 1}] ${step.action.tool}`);
-        console.log(`  输入: ${step.action.toolInput.query ?? JSON.stringify(step.action.toolInput)}`);
-        console.log(`  输出: ${JSON.stringify(step.observation).slice(0, 500)}`);
-      });
+      // response.intermediateSteps.forEach((step, i) => {
+      //   console.log(`[工具 ${i + 1}] ${step.action.tool}`);
+      //   console.log(`  输入: ${step.action.toolInput.query ?? JSON.stringify(step.action.toolInput)}`);
+      //   console.log(`  输出: ${JSON.stringify(step.observation).slice(0, 500)}`);
+      // });
       console.log("===================\n");
     }
 
@@ -162,9 +162,7 @@ askQuestion()
  * // openai 函数代理
  * 
  * createOpenAIFnAgents 
- * 
- *      -存在多个代理类型（？ ）
- *
+ *    -存在多个代理类型（？ ）
  * //创建 工具 
  * 
  * const tools =[]
