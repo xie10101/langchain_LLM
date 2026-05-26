@@ -29,9 +29,8 @@ const prompt = ChatPromptTemplate.fromTemplate(`
 
 //Create Chain - 创建链 
 const chain = prompt.pipe(model);
-
-
-
+const response =  await chain.invoke({ topic: "Dogs" });
+console.log(response);
 
 //  fromMessages
 const chain2 = ChatPromptTemplate.fromMessages([
@@ -56,7 +55,6 @@ const chain3 = ChatPromptTemplate.fromMessages([
   ["human", "{topic}"],
   ["ai", "生成的诗词如下"],
 ]).pipe(model);
-
 
 const response3 =  await chain3.invoke({lines:5, topic: "Dogs" });
 
