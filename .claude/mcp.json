@@ -1,0 +1,46 @@
+{
+  "mcpServers": {
+    "tavily-search": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@tavily/mcp-server-tavily"
+      ],
+      "env": {
+        "TAVILY_API_KEY": "${TAVILY_API_KEY}"
+      },
+      "description": "Tavily AI 联网搜索 MCP Server — 提供实时网页搜索能力，替代代码中的 TavilySearch 工具调用，让 Claude 直接发起搜索"
+    },
+    "langchain-docs": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@langchain/mcp-server-langchain"
+      ],
+      "env": {
+        "LANGCHAIN_API_KEY": "${LANGCHAIN_API_KEY}"
+      },
+      "description": "LangChain 官方文档 MCP Server — 查询 LangChain API 参考、示例代码和最佳实践"
+    },
+    "filesystem": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@anthropic/mcp-server-filesystem",
+        "g:/XIEX/langchain"
+      ],
+      "description": "本地文件系统 MCP Server — 允许 Claude 直接读写项目文件（限定在当前项目目录内）"
+    },
+    "redis-memory": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@anthropic/mcp-server-redis"
+      ],
+      "env": {
+        "REDIS_URL": "${REDIS_URL}"
+      },
+      "description": "Redis 记忆存储 MCP Server — 对接项目的 Redis 持久化记忆功能（参考 memory.js 中的 Upstash Redis 实现）"
+    }
+  }
+}
