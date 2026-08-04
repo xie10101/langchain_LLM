@@ -38,55 +38,55 @@ const parser4 =  StructuredOutputParser.fromZodSchema(schema)
 
 
 async function callStringOutputParser(parser) { 
-     
-// create parser 
-const chain1 = ChatPromptTemplate.fromMessages([
-  ["system",  "你是一个诗词生成器,请根据用户输入的关键词生成一首{lines}行的诗词"],
-  ["human", "{topic}"],
-  ["ai", "生成的诗词如下"],
-]).pipe(model).pipe(parser);
+  // create parser 
+  const chain1 = ChatPromptTemplate.fromMessages([
+    ["system",  "你是一个诗词生成器,请根据用户输入的关键词生成一首{lines}行的诗词"],
+    ["human", "{topic}"],
+    ["ai", "生成的诗词如下"],
+  ]).pipe(model).pipe(parser);
 
-return   await chain1.invoke({lines:5, topic: "Dogs" });
+  return   await chain1.invoke({lines:5, topic: "Dogs" });
 }
 
 
-async  function callListOutputParser(parser,parser2) { 
+
+async function callListOutputParser(parser,parser2) { 
      
-const chain3 = ChatPromptTemplate.fromMessages([
-  ["system",  "根据输入的关键词生成相同含义的5个词汇按照逗号分隔"],
-  ["human", `{phrase}`],
-  ["ai", "生成如下"],
-]).pipe(model).pipe(parser).pipe(parser2)
+    const chain3 = ChatPromptTemplate.fromMessages([
+      ["system",  "根据输入的关键词生成相同含义的5个词汇按照逗号分隔"],
+      ["human", `{phrase}`],
+      ["ai", "生成如下"],
+    ]).pipe(model).pipe(parser).pipe(parser2)
 
-// list 解析器 针对的只是使用string解析后的字符串数据 
+    // list 解析器 针对的只是使用string解析后的字符串数据 
 
-return   await chain3.invoke({ phrase: "开心" });
-  //   CommaSeparatedListOutputParser 只能解析纯字符串，不能解析 AIMessage 对象！
+    return   await chain3.invoke({ phrase: "开心" });
+    //   CommaSeparatedListOutputParser 只能解析纯字符串，不能解析 AIMessage 对象！
 }
 
 // callListOutputParser(parser,parser2).then(( result)=> console.log(result))
 
   // Template 结合 parser2 是标准格式  - 此种使用不合理 
 async  function callStructuredParserT( parser) { 
-const chain5 = ChatPromptTemplate.fromTemplate(`
-   根据输入的句子进行拆分
-  Formatting Instructions:{format_instructions}
-  sentence :{sentence}
-  `).pipe(model).pipe(parser)
+  const chain5 = ChatPromptTemplate.fromTemplate(`
+    根据输入的句子进行拆分
+    Formatting Instructions:{format_instructions}
+    sentence :{sentence}
+    `).pipe(model).pipe(parser)
 
 return   await chain5.invoke({ format_instructions: parser3.getFormatInstructions(),sentence: "小明13岁了" });
 }
-
 // callStructuredParserT(parser3).then(( result)=> console.log(result))
-async  function callStructuredParser(parser,formatInstructions) { 
-     
-const chain4 = ChatPromptTemplate.fromMessages([
-  ["system",  `根据输入拆分出信息 - \n{formatInstructions}`],
-  ["human", `{sentence}`],
-  ["ai", "生成如下"],
-]).pipe(model).pipe(parser)
 
-// list 解析器 针对的只是使用string解析后的字符串数据 
+async  function callStructuredParser(parser,formatInstructions) { 
+
+  const chain4 = ChatPromptTemplate.fromMessages([
+    ["system",  `根据输入拆分出信息 - \n{formatInstructions}`],
+    ["human", `{sentence}`],
+    ["ai", "生成如下"],
+  ]).pipe(model).pipe(parser)
+
+  // list 解析器 针对的只是使用string解析后的字符串数据 
 
 return   await chain4.invoke({ sentence: "小明13岁了",formatInstructions:formatInstructions });
 }

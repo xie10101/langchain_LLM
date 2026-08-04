@@ -19,6 +19,7 @@ const model = new ChatMoonshot({
   
 });
 
+// 注册文字转向量模型
 const embeddings = new OpenAIEmbeddings({
   apiKey: process.env.SILICONFLOW_API_KEY, 
   configuration: {
@@ -27,14 +28,15 @@ const embeddings = new OpenAIEmbeddings({
   model: "Qwen/Qwen3-Embedding-0.6B",
 });
 
-
+//网页加载器
 const loader = new CheerioWebBaseLoader("https://js.langchaincn.com/docs/modules/indexes/document_loaders/examples/web_loaders/web_cheerio", {
   selector: ".markdown ",
   // css 选择器 
   timeout: 10000,
 });
-const docs = await loader.load(); // 返回文档数组 
 
+// 文档提取 
+const docs = await loader.load(); // 返回文档数组 
 
 // 旧项目中会使用 黑盒chain 工具自动对Docs进行处理，但1.0版本提倡透明化 
 
@@ -49,13 +51,12 @@ const splitter = new RecursiveCharacterTextSplitter({
 
 // 切割文档（返回切割后的文档数组）
 const splittedDocs = await splitter.splitDocuments(docs);
-
-const vectorStore = new MemoryVectorStore(embeddings,splittedDocs);
-
+// 向量存储
+const vectorStore = new MemoryVectorStore(embeddings);
+//返回存储访问对象 
 const vectorStoreResult = await vectorStore.addDocuments(splittedDocs);
 
-
-//检索 
+//检索设置
 const restriever = vectorStore.asRetriever(
   {
     k: 3,
@@ -84,12 +85,12 @@ const prompt = ChatPromptTemplate.fromTemplate(
     {context}
      `
 )
-
+//注意 RunnableSequence 的使用 ？ 
 const chain = RunnableSequence.from([
   {
+    // 先执行检索-检索内容作为上下文
     context: async (input) => {
       const docs = await restriever.invoke(input.question);
-      console.log(docs);
       return docs.map(d => d.pageContent).join("\n");
     },
     question: (input) => input.question,
@@ -102,8 +103,8 @@ const chain = RunnableSequence.from([
  *  结合Runnale都实现了invoke的特点 
  *  当chain调用 invoke() 时，会自动执行prompt和model ，context的invoke执行- context 为方法此时才执行 
  */
-// const res = await chain.invoke({ question: "cheerio为啥没法模拟浏览器？" }); 
-// console.log(res.content)
+const res = await chain.invoke({ question: "cheerio为啥没法模拟浏览器？" }); 
+console.log(res.content)
 
 
 /** 

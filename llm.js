@@ -42,12 +42,12 @@ async function runBatch() {
 async function runStream() { 
   const stream = await model.stream("hello?"); 
   for await (const chunk of stream) 
-  {  
+  
+  }{  
      const content = chunk.content || "";
      process.stdout.write(content); // 不会换行！非换行打印 -实际stream是一系列对象 
-  }
-  // console.log(stream)
 }
+  // console.log(stream)
 
 /**
  *  未出现实际效果的原因 ：
